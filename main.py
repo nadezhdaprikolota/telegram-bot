@@ -1,44 +1,22 @@
-import logging
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import ParseMode
-from aiogram.utils import executor
-from aiogram.dispatcher.filters import Command
+from telegram.ext import Updater, MessageHandler, Filters
 
-API_TOKEN = "8035146676:AAHGG1HL8rGET5SKXt1Q1GhaN-N0JJpdGsk"
-ADMIN_ID = 1150616818
+import os
 
-logging.basicConfig(level=logging.INFO)
+# Получаем токен из переменных окружения
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+def reply(update, context):
+    user_message = update.message.text
+    update.message.reply_text(f"Вы сказали: {user_message}")
 
-# Приветственное сообщение
-@dp.message_handler(commands=["start"])
-async def send_welcome(message: types.Message):
-    await message.reply("Здравствуйте! Спасибо за сообщение. Мы скоро свяжемся с вами.")
+def main():
+    updater = Updater(token=BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-# Обработка всех сообщений
-@dp.message_handler()
-async def forward_to_admin(message: types.Message):
-    if str(message.from_user.id) != str(ADMIN_ID):
-        msg = f"📩 Новое сообщение от @{message.from_user.username or 'без имени'} (ID: {message.from_user.id}):
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, reply))
 
-{message.text}"
-        await bot.send_message(ADMIN_ID, msg)
-
-# Ответ админа
-@dp.message_handler(Command("reply"))
-async def reply_user(message: types.Message):
-    if str(message.from_user.id) == str(ADMIN_ID):
-        try:
-            parts = message.text.split(" ", 2)
-            user_id = int(parts[1])
-            reply_text = parts[2]
-            await bot.send_message(user_id, f"💬 Ответ от администратора:
-{reply_text}")
-            await message.reply("✅ Ответ отправлен.")
-        except Exception as e:
-            await message.reply(f"Ошибка: {e}")
+    updater.start_polling()
+    updater.idle()
 
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+    main()
